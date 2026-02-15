@@ -1,45 +1,25 @@
-
 import logging
-from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
+LOG_DIR = Path(__file__).parent
+LOG_FILE = LOG_DIR / "app.log"
 
-def setup_logger(name: str, level: str, log_to_file: bool, log_file: Path) -> logging.Logger:
-    """
-    Cria um logger padrão:
-    - Sempre loga no console
-    - Opcionalmente loga em arquivo com rotação (evita log infinito)
-    """
+def get_logger(name="app"):
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger.setLevel(logging.INFO)
 
-    # Evita duplicar handlers se você rodar várias vezes
-    if logger.handlers:
-        return logger
-
-    fmt = logging.Formatter(
-        fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-    # Console handler
-    ch = logging.StreamHandler()
-    ch.setLevel(level)
-    ch.setFormatter(fmt)
-    logger.addHandler(ch)
-
-    # File handler (opcional)
-    if log_to_file:
-        log_file.parent.mkdir(parents=True, exist_ok=True)
-        fh = RotatingFileHandler(
-            filename=str(log_file),
-            maxBytes=1_000_000,   # ~1MB
-            backupCount=3,        # mantém até 3 arquivos antigos
-            encoding="utf-8",
+    if not logger.handlers:
+        formatter = logging.Formatter(
+            "%(asctime)s | %(levelname)s | %(message)s"
         )
-        fh.setLevel(level)
-        fh.setFormatter(fmt)
-        logger.addHandler(fh)
 
-    logger.propagate = False
+        file_handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
+        file_handler.setFormatter(formatter)
+
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+
+        logger.addHandler(file_handler)
+        logger.addHandler(console_handler)
+
     return logger
